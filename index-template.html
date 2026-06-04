@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BA Agent - 餐饮智能化选品</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.05); border-radius: 99px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.1); }
+        .resizer-bar { width: 8px; min-width: 8px; cursor: col-resize; z-index: 50; position: relative; flex-shrink: 0; background-color: rgba(0,0,0,0.02); transition: background-color 0.2s; align-self: stretch; }
+        .resizer-bar:hover, .resizer-bar.dragging { background-color: rgba(16, 185, 129, 0.08); }
+        .resizer-bar::after { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; transform: translateX(-50%); background-color: rgba(0, 0, 0, 0.06); border-radius: 99px; }
+        .resizer-bar:hover::after, .resizer-bar.dragging::after { background-color: rgba(16, 185, 129, 0.5); width: 3px; }
+        .thought-container { max-height: 0; overflow: hidden; transition: max-height 0.3s cubic-bezier(0, 1, 0, 1); }
+        .thought-container.expanded { max-height: 1000px; transition: max-height 0.3s cubic-bezier(1, 0, 1, 0); }
+        .canvas-tab-content { display: none !important; }
+        .canvas-tab-content.active { display: flex !important; flex-direction: column; }
+        html.dark body { background-color: #1a1a2e; }
+        html.dark .bg-white\\/30, html.dark .bg-white\\/40, html.dark .bg-white\\/50, html.dark .bg-white\\/20, html.dark .bg-white\\/80 { background-color: rgba(30,30,50,0.6) !important; }
+        html.dark header { background-color: rgba(20,20,40,0.5) !important; border-color: rgba(255,255,255,0.06) !important; }
+        html.dark section { border-color: rgba(255,255,255,0.06) !important; }
+        html.dark .task-item, html.dark .bg-white { background-color: #222240 !important; border-color: rgba(255,255,255,0.06) !important; }
+        html.dark .text-slate-800, html.dark .text-slate-700 { color: #c8c8d8 !important; }
+        html.dark .text-slate-600 { color: #a0a0b8 !important; }
+        html.dark .text-slate-500 { color: #8888a0 !important; }
+        html.dark .text-slate-400 { color: #686880 !important; }
+        html.dark .text-slate-300 { color: #505068 !important; }
+        html.dark .border-slate-200\\/30, html.dark .border-slate-200\\/40, html.dark .border-slate-200\\/50, html.dark .border-slate-200\\/60, html.dark .border-slate-200\\/80 { border-color: rgba(255,255,255,0.06) !important; }
+        html.dark .border-slate-200\\/20 { border-color: rgba(255,255,255,0.04) !important; }
+        html.dark .bg-slate-50\\/80, html.dark .bg-slate-50\\/60, html.dark .bg-slate-100\\/40 { background-color: rgba(30,30,50,0.6) !important; }
+        html.dark .bg-slate-50 { background-color: #1a1a2e !important; }
+        html.dark .bg-slate-100 { background-color: #222240 !important; }
+        html.dark .bg-slate-100\\/60 { background-color: rgba(34,34,64,0.6) !important; }
+        html.dark .bg-white\\/70 { background-color: rgba(34,34,64,0.7) !important; }
+        html.dark .bg-white\\/60 { background-color: rgba(34,34,64,0.6) !important; }
+        html.dark input, html.dark textarea { color: #c8c8d8 !important; }
+        html.dark textarea::placeholder { color: #505068 !important; }
+        html.dark .bg-slate-800 { background-color: #3d3d5c !important; }
+        html.dark .hover\\:bg-slate-200\\/50:hover { background-color: rgba(255,255,255,0.05) !important; }
+    </style>
+    <script>
+        window.svgIcons = {
+            message: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
+            folder: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+            strategy: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 16 12 12 8"></polygon></svg>`,
+            plus: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+            play: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+            fileText: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`,
+            ssoKey: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
+            brain: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-4.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2z"></path><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-4.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2z"></path></svg>`,
+            xlsx: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><rect x="8" y="12" width="8" height="4" rx="0.5"></rect><line x1="10" y1="14" x2="14" y2="14"></line></svg>`,
+            markdown: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>`,
+            dashboard: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>`
+        };
+        document.addEventListener("DOMContentLoaded", function() {
+            renderIcons();
+        });
+        function renderIcons() {
+            document.querySelectorAll("[data-icon]").forEach(el => {
+                const iconName = el.getAttribute("data-icon");
+                if (window.svgIcons[iconName]) el.innerHTML = window.svgIcons[iconName];
+            });
+        }
+    </script>
+</head>
+<body class="h-screen w-screen overflow-hidden text-slate-700 font-sans antialiased bg-slate-50 relative flex flex-col select-none">
+    <div class="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-slate-300/20 blur-[120px] pointer-events-none z-0"></div>
+    <div class="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-indigo-100/30 blur-[130px] pointer-events-none z-0"></div>
+
+    <header class="h-14 border-b border-slate-200/40 bg-white/30 backdrop-blur-md flex items-center justify-between px-6 z-10 flex-shrink-0">
+        <div class="flex items-center space-x-2.5">
+            <span class="font-bold text-slate-800 tracking-tight text-sm">BA Agent <span class="font-serif text-[10px] text-slate-400 font-normal tracking-normal ml-2">Tequila Version</span></span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-1.5 bg-white/60 border border-slate-200/50 rounded-xl px-2.5 py-1 text-xs shadow-sm backdrop-blur-sm focus-within:border-slate-500/60 focus-within:ring-1 focus-within:ring-slate-500/20 transition-all">
+                <span data-icon="ssoKey" class="text-slate-400"></span>
+                <span class="text-[11px] text-slate-500 font-medium whitespace-nowrap">内网鉴权:</span>
+                <input type="text" value="SSO_AUTH_SUCCESS" class="bg-transparent border-none outline-none text-slate-700 font-mono w-32 text-[11px] placeholder-slate-400">
+            </div>
+            <span class="flex items-center gap-1.5 text-slate-700 bg-slate-50/60 border border-slate-200/50 px-2.5 py-1 rounded-full text-xs font-medium">
+                <span class="w-1.5 h-1.5 bg-slate-500 rounded-full animate-pulse"></span> SSO内网鉴权已配置
+            </span>
+            <button onclick="toggleDarkMode()" id="btn-darkmode" class="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 transition-colors" title="深色模式">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <main id="main-container" class="flex-1 flex overflow-hidden z-10 relative w-full bg-transparent">
+
+        <!-- ========== 最左侧：任务边栏 ========== -->
+        <section id="panel-taskbar" class="bg-white/50 backdrop-blur-md flex flex-col overflow-hidden border-r border-slate-200/20 flex-shrink-0" style="width: 270px;">
+            <!-- 头部 -->
+            <div class="px-4 pt-3 pb-2 border-b border-slate-200/40 flex-shrink-0">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold text-slate-800 text-[11px] tracking-tight">任务</span>
+                    <span class="text-[10px] text-slate-400 font-mono bg-slate-100/60 px-1.5 py-0.5 rounded">12</span>
+                </div>
+                <button onclick="createNewTask()" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-sm mb-2">
+                    <span data-icon="plus"></span> Run 新建任务
+                </button>
+            </div>
+
+            <!-- 历史任务列表 -->
+            <div class="flex-1 overflow-y-auto px-4 py-2" id="task-list-scroll">
+
+                <!-- 今天 -->
+                <div class="task-date-group" data-task-status="active">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 px-1">今天</p>
+                    <div class="space-y-1">
+                        <div class="task-item group relative p-1.5 bg-white/80 border border-indigo-200/60 rounded-lg text-xs cursor-pointer hover:border-indigo-300 hover:shadow transition-all ring-1 ring-indigo-100/50" data-task-status="active" onclick="selectTask(this, 'task-001', '韩国城店菜单重塑')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-800 text-[11px]">韩国城店菜单重塑</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">门店诊断 + 应季品扩充</p>
+                                </div>
+                                <span class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1 animate-pulse"></span>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">c89f2</span>
+                                <span class="text-indigo-500 font-medium bg-indigo-50/50 px-1.5 py-0.5 rounded">进行中</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                        <div class="task-item group relative p-1.5 bg-white/60 border border-slate-200/50 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="active" onclick="selectTask(this, 'task-002', '五一节大促防守选品')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-800 text-[11px]">五一节大促防守选品</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">竞对防御 + 高复购截流</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">d45a1</span>
+                                <span class="text-amber-500 font-medium bg-amber-50/50 px-1.5 py-0.5 rounded">待确认</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 本周 -->
+                <div class="task-date-group" data-task-status="active">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 mt-2 px-1">本周</p>
+                    <div class="space-y-1">
+                        <div class="task-item group relative p-1.5 bg-white/60 border border-slate-200/50 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="active" onclick="selectTask(this, 'task-003', '高新区外卖截流测试')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-800 text-[11px]">高新区外卖截流测试</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">新区域开拓 + 实时竞对监控</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">b78e3</span>
+                                <span class="text-indigo-500 font-medium bg-indigo-50/50 px-1.5 py-0.5 rounded">进行中</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                        <div class="task-item group relative p-1.5 bg-white/60 border border-slate-200/50 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="active" onclick="selectTask(this, 'task-004', '夏季时令美味上新计划')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-800 text-[11px]">夏季时令美味上新计划</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">时令冷饮 + 招牌主食迭代</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">f12c4</span>
+                                <span class="text-indigo-500 font-medium bg-indigo-50/50 px-1.5 py-0.5 rounded">进行中</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                        <div class="task-item group relative p-1.5 bg-white/60 border border-slate-200/50 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="active" onclick="selectTask(this, 'task-007', '商圈竞品价格波动应对')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-800 text-[11px]">商圈竞品价格波动应对</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">动态定价策略 + 套装组合</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">h91g7</span>
+                                <span class="text-amber-500 font-medium bg-amber-50/50 px-1.5 py-0.5 rounded">待确认</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 上周 -->
+                <div class="task-date-group" data-task-status="done">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 mt-2 px-1">上周</p>
+                    <div class="space-y-1">
+                        <div class="task-item group relative p-1.5 bg-white/50 border border-slate-200/30 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="done" onclick="selectTask(this, 'task-005', '日常上新选品任务')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-700 text-[11px]">日常上新选品任务</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">2026/05/15 周期策略</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">a01b2</span>
+                                <span class="text-emerald-500 font-medium bg-emerald-50/50 px-1.5 py-0.5 rounded">已完成</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                        <div class="task-item group relative p-1.5 bg-white/50 border border-slate-200/30 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="done" onclick="selectTask(this, 'task-008', '门店 SKU 汰换二期')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-700 text-[11px]">门店 SKU 汰换二期</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">低转化长尾清除 + 高毛利导入</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">k35p9</span>
+                                <span class="text-emerald-500 font-medium bg-emerald-50/50 px-1.5 py-0.5 rounded">已完成</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                        <div class="task-item group relative p-1.5 bg-white/50 border border-slate-200/30 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="done" onclick="selectTask(this, 'task-009', '深夜场景供给缺口诊断')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-700 text-[11px]">深夜场景供给缺口诊断</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">22:00-02:00 时段选品补充</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">m72r1</span>
+                                <span class="text-emerald-500 font-medium bg-emerald-50/50 px-1.5 py-0.5 rounded">已完成</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 更早 -->
+                <div class="task-date-group" data-task-status="done">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 mt-2 px-1">更早</p>
+                    <div class="space-y-1">
+                        <div class="task-item group relative p-1.5 bg-white/40 border border-slate-200/20 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="done" onclick="selectTask(this, 'task-010', 'Q2 季度品类规划')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-600 text-[11px]">Q2 季度品类规划</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">夏季菜单整体策略输出</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">n88w4</span>
+                                <span class="text-emerald-500 font-medium bg-emerald-50/50 px-1.5 py-0.5 rounded">已完成</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="task-date-group" data-task-status="archived">
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 mt-2 px-1">上月</p>
+                    <div class="space-y-1">
+                        <div class="task-item group relative p-1.5 bg-white/40 border border-slate-200/20 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="archived" onclick="selectTask(this, 'task-006', '节假日活动爆款分析')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-600 text-[11px]">节假日活动爆款分析</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">五一商圈防守方案</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">e67d8</span>
+                                <span class="text-slate-400 font-medium bg-slate-100/60 px-1.5 py-0.5 rounded">已归档</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                        <div class="task-item group relative p-1.5 bg-white/40 border border-slate-200/20 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="archived" onclick="selectTask(this, 'task-011', '春节档期复盘分析')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-600 text-[11px]">春节档期复盘分析</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">年夜饭套餐销售回顾</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">x42v0</span>
+                                <span class="text-slate-400 font-medium bg-slate-100/60 px-1.5 py-0.5 rounded">已归档</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                        <div class="task-item group relative p-1.5 bg-white/40 border border-slate-200/20 rounded-lg text-xs cursor-pointer hover:border-slate-300 hover:shadow transition-all" data-task-status="archived" onclick="selectTask(this, 'task-012', '冬至暖心特辑选品')">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <span class="truncate font-semibold text-slate-600 text-[11px]">冬至暖心特辑选品</span>
+                                    <span class="text-[9px] text-slate-300 font-normal ml-1">· 12:30</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">节日限定汤品与火锅套装</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between mt-1 text-[9px]">
+                                <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">z99y5</span>
+                                <span class="text-slate-400 font-medium bg-slate-100/60 px-1.5 py-0.5 rounded">已归档</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="resizer-bar" id="resizer-1"></div>
+
+        <!-- ========== 中间：对话区 ========== -->
+        <section id="panel-chat" class="flex flex-col bg-white/20 backdrop-blur-sm overflow-hidden flex-1" style="min-width: 320px;">
+            <div class="h-14 border-b border-slate-200/30 flex items-center justify-between px-6 flex-shrink-0">
+                <div class="flex gap-0.5 bg-slate-100/60 rounded-lg p-0.5" id="task-subtabs">
+                    <button onclick="switchSubTab('chat', this)" class="subtab-btn px-3 py-1 text-[10px] font-medium rounded-md bg-white text-slate-800 transition-colors">对话</button>
+                    <button onclick="switchSubTab('files', this)" class="subtab-btn px-3 py-1 text-[10px] font-medium rounded-md bg-white text-slate-400 transition-colors">文件</button>
+                    <button onclick="switchSubTab('skill', this)" class="subtab-btn px-3 py-1 text-[10px] font-medium rounded-md bg-white text-slate-400 transition-colors">Skill</button>
+                </div>
+                <span class="text-[11px] text-slate-400 flex items-center gap-1 font-mono">SID: c89f2-202605</span>
+            </div>
+
+            <!-- 对话视图 -->
+            <div id="chat-view" class="flex-1 overflow-y-auto p-6 space-y-5 max-w-2xl w-full mx-auto">
+                <!-- 新对话分割线 -->
+                <div class="flex items-center gap-3 w-full">
+                    <div class="flex-1 h-px bg-slate-200"></div>
+                    <span class="text-[10px] text-slate-400 whitespace-nowrap font-medium">新对话 <span class="font-mono text-slate-300">SID: c89f2</span></span>
+                    <div class="flex-1 h-px bg-slate-200"></div>
+                </div>
+                <!-- 用户消息 -->
+                <div class="flex justify-end w-full">
+                    <div class="bg-slate-100 text-slate-700 rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[75%]">
+                        帮我诊断一下"韩国城店"的动态菜单。请使用混合模型重新编排50款SPU的数据看板。
+                    </div>
+                </div>
+
+                <!-- Agent 回复 -->
+                <div class="flex flex-col items-start w-full">
+                    <div class="py-1 space-y-2 w-full">
+                        <button onclick="toggleThoughtProcess()" class="flex items-center space-x-1.5 text-xs text-slate-400 hover:text-slate-600 font-medium transition-colors">
+                            <span>思考中...已深度推演 14 秒（点击折叠）</span>
+                            <span class="text-[9px] text-slate-300">▼</span>
+                        </button>
+                        <div id="thought-log" class="thought-container expanded text-[11px] text-slate-500 leading-relaxed space-y-1">
+                            <p><span class="text-indigo-400">[纯思考]</span> 正在分析当前门店外卖核心SPU历史销量流水，寻找低转化的SKU...</p>
+                            <p><span class="text-amber-500">[bash]</span> <code class="bg-slate-100 text-slate-500 px-1 rounded">mtdata query --sql "SELECT spu_id, name, cvr FROM core_spu WHERE store_id = 'korea' AND date >= '2026-05-01'"</code></p>
+                            <p><span class="text-indigo-400">[纯思考]</span> 判定商圈供需不均衡项：深夜场景高转化产品供给率缺失 18.5%。</p>
+                            <p><span class="text-amber-500">[bash]</span> <code class="bg-slate-100 text-slate-500 px-1 rounded">curl -X POST https://api.ba.agent/v1/strategy/match -d '{"features": ["时令风味", "高复购"]}'</code></p>
+                            <p><span class="text-indigo-400">[纯思考]</span> 数据池重新注入完成，正在将高维表格投射至右侧决策工作区。</p>
+                        </div>
+                    </div>
+                    <div class="text-sm leading-relaxed text-slate-700">
+                        诊断重组就绪。系统已对该店在架的 <strong class="text-slate-900">50款餐饮核心SPU</strong> 完成了复合测算。
+                    </div>
+                </div>
+
+                <div id="card-policy-seasonal" class="border border-slate-200/60 rounded-xl p-3 w-full transition-all">
+                    <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="policy-indicator w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                            <span class="font-bold text-slate-800">Skill: 应季品扩充</span>
+                        </div>
+                        <span class="sku-badge px-2 py-0.5 rounded-md font-mono text-[11px] font-bold bg-slate-50 text-slate-700 border border-slate-100">+22 SKU</span>
+                    </div>
+                    <div class="mt-2 text-[11px] text-slate-500 leading-snug">
+                        - 引入当季热门冷饮和夏季特色小食。<br>
+                        - 预计将拉升下午茶时段订单量约 12%。
+                    </div>
+                    <div class="flex justify-end gap-1.5 mt-2.5 action-container">
+                        <button onclick="handlePolicyAction('accept-seasonal')" class="px-3 py-1 bg-slate-600 hover:bg-slate-700 text-white rounded text-[10px] font-bold transition-all">采纳</button>
+                        <button onclick="handlePolicyAction('modify-seasonal')" class="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded text-[10px] font-medium border border-slate-200 transition-all">修改</button>
+                        <button onclick="handlePolicyAction('reject-seasonal')" class="px-3 py-1 bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded text-[10px] font-medium border border-slate-200 transition-all">拒绝</button>
+                    </div>
+                </div>
+
+                <div id="card-policy-elimination" class="border border-slate-200/60 rounded-xl p-3 w-full transition-all">
+                    <div class="flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="policy-indicator w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            <span class="font-bold text-slate-800">Skill: 低转化品汰换</span>
+                        </div>
+                        <span class="sku-badge px-2 py-0.5 rounded-md font-mono text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">-13 SKU</span>
+                    </div>
+                    <div class="mt-2 text-[11px] text-slate-500 leading-snug">
+                        - 移除连续 14 天转化率低于 5% 的长尾菜品。<br>
+                        - 减少库存损耗压力，聚焦主推爆款。
+                    </div>
+                    <div class="flex justify-end gap-1.5 mt-2.5 action-container">
+                        <button onclick="handlePolicyAction('accept-elimination')" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition-all">采纳</button>
+                        <button onclick="handlePolicyAction('modify-elimination')" class="px-3 py-1 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded text-[10px] font-medium border border-slate-200 transition-all">修改</button>
+                        <button onclick="handlePolicyAction('reject-elimination')" class="px-3 py-1 bg-slate-50 hover:bg-rose-50 hover:text-rose-600 text-slate-500 rounded text-[10px] font-medium border border-slate-200 transition-all">拒绝</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文件视图 -->
+            <div id="files-view" class="flex-1 overflow-y-auto p-5 hidden">
+                <div class="max-w-lg mx-auto">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Project Files</span>
+                        <span class="text-[9px] text-slate-400 font-mono">tequila-strategy/</span>
+                    </div>
+                    <div class="space-y-0.5 text-[11px]">
+                        <div class="flex items-center gap-1.5 text-slate-600 cursor-pointer hover:bg-slate-100/60 rounded py-0.5 px-1 -mx-1 transition-colors">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="text-slate-400 flex-shrink-0"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            <span class="truncate">input</span>
+                        </div>
+                        <div class="ml-3.5 border-l border-slate-200 pl-3 space-y-0.5">
+                            <div class="flex items-center gap-1.5 text-slate-500 cursor-pointer hover:text-slate-800 hover:bg-slate-100/60 rounded py-0.5 px-1 -mx-1 transition-colors">
+                                <span class="w-3 h-3 flex items-center justify-center flex-shrink-0"><span class="w-1 h-1 rounded-full bg-emerald-400"></span></span>
+                                <span class="truncate">原始流单明细</span><span class="text-[9px] text-slate-300">.csv</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-slate-500 cursor-pointer hover:text-slate-800 hover:bg-slate-100/60 rounded py-0.5 px-1 -mx-1 transition-colors">
+                                <span class="w-3 h-3 flex items-center justify-center flex-shrink-0"><span class="w-1 h-1 rounded-full bg-indigo-400"></span></span>
+                                <span class="truncate">时令选品池</span><span class="text-[9px] text-slate-300">.xlsx</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-slate-500 cursor-pointer hover:text-slate-800 hover:bg-slate-100/60 rounded py-0.5 px-1 -mx-1 transition-colors">
+                                <span class="w-3 h-3 flex items-center justify-center flex-shrink-0"><span class="w-1 h-1 rounded-full bg-indigo-400"></span></span>
+                                <span class="truncate">竞品价格监控表</span><span class="text-[9px] text-slate-300">.xlsx</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-slate-600 cursor-pointer hover:bg-slate-100/60 rounded py-0.5 px-1 -mx-1 transition-colors">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="text-slate-400 flex-shrink-0"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            <span class="truncate">data</span>
+                        </div>
+                        <div class="ml-3.5 border-l border-slate-200 pl-3 space-y-0.5">
+                            <div class="flex items-center gap-1.5 text-slate-500 cursor-pointer hover:text-slate-800 hover:bg-slate-100/60 rounded py-0.5 px-1 -mx-1 transition-colors">
+                                <span class="w-3 h-3 flex items-center justify-center flex-shrink-0"><span class="w-1 h-1 rounded-full bg-emerald-400"></span></span>
+                                <span class="truncate">清洗后销量表</span><span class="text-[9px] text-slate-300">.csv</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-slate-600 cursor-pointer hover:bg-slate-100/60 rounded py-0.5 px-1 -mx-1 transition-colors">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" class="text-slate-400 flex-shrink-0"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            <span class="truncate">artifacts</span>
+                        </div>
+                        <div class="ml-3.5 border-l border-slate-200 pl-3 space-y-0.5">
+                            <div class="flex items-center gap-1.5 text-slate-500 cursor-pointer hover:text-slate-800 hover:bg-slate-100/60 rounded py-0.5 px-1 -mx-1 transition-colors">
+                                <span class="w-3 h-3 flex items-center justify-center flex-shrink-0"><span class="w-1 h-1 rounded-full bg-amber-400"></span></span>
+                                <span class="truncate">策略画布</span><span class="text-[9px] text-slate-300">.html</span>
+                            </div>
+                            <div class="flex items-center gap-1.5 text-slate-500 cursor-pointer hover:text-slate-800 hover:bg-slate-100/60 rounded py-0.5 px-1 -mx-1 transition-colors">
+                                <span class="w-3 h-3 flex items-center justify-center flex-shrink-0"><span class="w-1 h-1 rounded-full bg-amber-400"></span></span>
+                                <span class="truncate">对话生成画布</span><span class="text-[9px] text-slate-300">.html</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill 视图 -->
+            <div id="skill-view" class="flex-1 overflow-y-auto p-6 hidden">
+                <div class="max-w-2xl mx-auto">
+                    <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-3">已安装 Skill 列表</p>
+                    <div class="space-y-2">
+                        <div class="p-3 bg-white/80 border border-slate-200/60 rounded-xl text-xs space-y-1.5 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold text-slate-800 truncate">Skill: 高复购外卖截流</span>
+                                <div class="w-7 h-4 bg-emerald-500 rounded-full flex items-center p-0.5 cursor-pointer">
+                                    <div class="w-3 h-3 bg-white rounded-full shadow-sm ml-auto transition-transform duration-200"></div>
+                                </div>
+                            </div>
+                            <p class="text-slate-500 text-[11px] leading-snug">拦截商圈高检索但本地供给缺口的餐饮品类进行极速档口出餐平替。</p>
+                        </div>
+                        <div class="p-3 bg-white/80 border border-slate-200/60 rounded-xl text-xs space-y-1.5 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold text-slate-800 truncate">Skill: 门店自动化诊断</span>
+                                <div class="w-7 h-4 bg-slate-300 rounded-full flex items-center p-0.5 cursor-pointer">
+                                    <div class="w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
+                                </div>
+                            </div>
+                            <p class="text-slate-500 text-[11px] leading-snug">自动分析门店经营数据，提供SKU汰换与补充建议。</p>
+                        </div>
+                        <div class="p-3 bg-white/80 border border-slate-200/60 rounded-xl text-xs space-y-1.5 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold text-slate-800 truncate">Skill: 商圈竞对防御</span>
+                                <div class="w-7 h-4 bg-slate-300 rounded-full flex items-center p-0.5 cursor-pointer">
+                                    <div class="w-3 h-3 bg-white rounded-full shadow-sm transition-transform duration-200"></div>
+                                </div>
+                            </div>
+                            <p class="text-slate-500 text-[11px] leading-snug">分析5公里内竞对上新趋势，生成防御性跟进策略。</p>
+                        </div>
+                        <div class="p-3 bg-white/80 border border-slate-200/60 rounded-xl text-xs space-y-1.5 shadow-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="font-semibold text-slate-800 truncate">Skill: 动态定价引擎</span>
+                                <div class="w-7 h-4 bg-emerald-500 rounded-full flex items-center p-0.5 cursor-pointer">
+                                    <div class="w-3 h-3 bg-white rounded-full shadow-sm ml-auto transition-transform duration-200"></div>
+                                </div>
+                            </div>
+                            <p class="text-slate-500 text-[11px] leading-snug">根据商圈供需实时调整价格带，最大化利润同时保持竞争力。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底层会话框 -->
+            <div class="p-6 flex-shrink-0">
+                <div class="max-w-2xl mx-auto bg-white/70 backdrop-blur-md border border-slate-200/80 rounded-2xl p-2.5 shadow-md shadow-slate-100/50 focus-within:border-slate-400 transition-all">
+                    <textarea rows="2" class="w-full px-3 py-1.5 bg-transparent resize-none focus:outline-none text-xs font-medium text-slate-700 placeholder-slate-400" placeholder="追加新的选品或者提成诉求..."></textarea>
+                    <div class="flex items-center justify-end pt-2 px-1 border-t border-slate-100 gap-2 mt-1">
+                        <button class="px-3 py-1.5 bg-slate-100/80 hover:bg-slate-200 text-slate-500 hover:text-slate-600 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg> 中止
+                        </button>
+                        <button class="px-2.5 py-1.5 bg-slate-100/80 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg transition-all flex items-center shadow-sm" title="上传文件">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                        </button>
+                        <button class="px-4 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> 发送
+                        </button>
+                        <button onclick="createNewChat()" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-700 text-[11px] font-bold rounded-lg transition-all flex items-center border border-slate-200 shadow-sm" title="新建对话">
+                            <span data-icon="plus" class="text-slate-400"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="resizer-bar" id="resizer-2"></div>
+
+        <!-- ========== 右侧：画布区（文件 Tab 切换） ========== -->
+        <section id="panel-canvas" class="bg-white/40 backdrop-blur-xl flex flex-col overflow-hidden flex-shrink-0 transition-all duration-300 ease-in-out" style="width: 560px; min-width: 400px;">
+            <!-- 文件 Tab 栏 -->
+            <div class="h-10 px-3 flex items-end justify-between border-b border-slate-200/40 bg-slate-50/80 flex-shrink-0">
+                <div class="flex gap-0.5 items-end -mb-px">
+                    <button onclick="switchCanvasTab('dashboard', this)" data-canvas-tab="dashboard" class="canvas-tab-btn group px-3 py-1.5 bg-white border border-slate-200 border-b-transparent rounded-t-lg text-[11px] font-bold text-slate-700 cursor-pointer flex items-center gap-1.5">
+                        <span data-icon="dashboard" class="w-3 h-3 text-indigo-500"></span>Dashboard
+                        <span onclick="event.stopPropagation();deleteCanvasTab(this)" class="w-4 h-4 flex items-center justify-center rounded text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all ml-0.5 text-[11px] leading-none">&times;</span>
+                    </button>
+                    <button onclick="switchCanvasTab('xlsx', this)" data-canvas-tab="xlsx" class="canvas-tab-btn group px-3 py-1.5 bg-transparent border border-transparent hover:bg-white/60 rounded-t-lg text-[11px] font-medium text-slate-500 cursor-pointer flex items-center gap-1.5">
+                        <span data-icon="xlsx" class="w-3 h-3 text-emerald-500"></span>sample_report.xlsx
+                        <span onclick="event.stopPropagation();deleteCanvasTab(this)" class="w-4 h-4 flex items-center justify-center rounded text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all ml-0.5 text-[11px] leading-none">&times;</span>
+                    </button>
+                    <button onclick="switchCanvasTab('md', this)" data-canvas-tab="md" class="canvas-tab-btn group px-3 py-1.5 bg-transparent border border-transparent hover:bg-white/60 rounded-t-lg text-[11px] font-medium text-slate-500 cursor-pointer flex items-center gap-1.5">
+                        <span data-icon="markdown" class="w-3 h-3 text-slate-400"></span>analysis.md
+                        <span onclick="event.stopPropagation();deleteCanvasTab(this)" class="w-4 h-4 flex items-center justify-center rounded text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 group-hover:opacity-100 transition-all ml-0.5 text-[11px] leading-none">&times;</span>
+                    </button>
+                </div>
+                <button onclick="toggleCanvas()" id="btn-toggle-canvas" class="mb-1 px-2 py-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 flex-shrink-0" title="收起工作区">
+                    <svg class="toggle-canvas-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    <span id="toggle-canvas-label">收起</span>
+                </button>
+            </div>
+
+            <!-- Excel 表格 sample -->
+            <div id="canvas-xlsx" class="canvas-tab-content flex-1 overflow-y-auto">
+                <div class="p-4">
+                    <div class="bg-white border border-slate-200/50 rounded-xl shadow-sm overflow-hidden">
+                        <table class="w-full text-left border-collapse text-[11px]">
+                            <thead>
+                                <tr class="bg-slate-50/70 border-b border-slate-200/40 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <th class="py-2.5 px-3">SPU ID</th>
+                                    <th class="py-2.5 px-3">商品名称</th>
+                                    <th class="py-2.5 px-3">分类</th>
+                                    <th class="py-2.5 px-2 text-right">日均销量</th>
+                                    <th class="py-2.5 px-2 text-right">转化率</th>
+                                    <th class="py-2.5 px-2 text-right">客单价</th>
+                                    <th class="py-2.5 px-3 text-center">策略组</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-600 font-medium">
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10001</td><td class="py-2 px-3 text-slate-700">招牌秘制泡菜五花肉丼饭</td><td class="py-2 px-3 text-slate-500">招牌主食</td><td class="py-2 px-2 text-right font-mono">42</td><td class="py-2 px-2 text-right font-mono text-slate-900">18.2%</td><td class="py-2 px-2 text-right font-mono">¥38</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100">高销组</span></td></tr>
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10002</td><td class="py-2 px-3 text-slate-700">韩式传统大酱汤套餐</td><td class="py-2 px-3 text-slate-500">招牌主食</td><td class="py-2 px-2 text-right font-mono">35</td><td class="py-2 px-2 text-right font-mono text-slate-900">15.1%</td><td class="py-2 px-2 text-right font-mono">¥32</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100">高销组</span></td></tr>
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10003</td><td class="py-2 px-3 text-slate-700">琥珀蜂蜜芥末全鸡</td><td class="py-2 px-3 text-slate-500">人气炸鸡</td><td class="py-2 px-2 text-right font-mono">38</td><td class="py-2 px-2 text-right font-mono text-slate-900">19.5%</td><td class="py-2 px-2 text-right font-mono">¥68</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100">高销组</span></td></tr>
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10004</td><td class="py-2 px-3 text-slate-700">冷榨贵州刺梨黄皮冰饮</td><td class="py-2 px-3 text-slate-500">时令冷饮</td><td class="py-2 px-2 text-right font-mono">28</td><td class="py-2 px-2 text-right font-mono text-slate-900">22.1%</td><td class="py-2 px-2 text-right font-mono">¥18</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-100">时令组</span></td></tr>
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10005</td><td class="py-2 px-3 text-slate-700">重瓣茉莉植物基厚椰奶绿</td><td class="py-2 px-3 text-slate-500">时令冷饮</td><td class="py-2 px-2 text-right font-mono">31</td><td class="py-2 px-2 text-right font-mono text-slate-900">20.3%</td><td class="py-2 px-2 text-right font-mono">¥22</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-100">时令组</span></td></tr>
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10006</td><td class="py-2 px-3 text-slate-700">豪华海鲜豆腐汤锅</td><td class="py-2 px-3 text-slate-500">汤品火锅</td><td class="py-2 px-2 text-right font-mono">22</td><td class="py-2 px-2 text-right font-mono text-slate-900">18.7%</td><td class="py-2 px-2 text-right font-mono">¥48</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-100">转化组</span></td></tr>
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10007</td><td class="py-2 px-3 text-slate-700">芝士年糕拉面锅</td><td class="py-2 px-3 text-slate-500">招牌主食</td><td class="py-2 px-2 text-right font-mono">18</td><td class="py-2 px-2 text-right font-mono text-slate-900">12.4%</td><td class="py-2 px-2 text-right font-mono">¥28</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-50 text-slate-600 border border-slate-100">默认组</span></td></tr>
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10008</td><td class="py-2 px-3 text-slate-700">秘制火山火辣炸鸡</td><td class="py-2 px-3 text-slate-500">人气炸鸡</td><td class="py-2 px-2 text-right font-mono">33</td><td class="py-2 px-2 text-right font-mono text-slate-900">16.8%</td><td class="py-2 px-2 text-right font-mono">¥62</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-100">高销组</span></td></tr>
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10009</td><td class="py-2 px-3 text-slate-700">手打巨峰葡萄冰酿</td><td class="py-2 px-3 text-slate-500">时令冷饮</td><td class="py-2 px-2 text-right font-mono">26</td><td class="py-2 px-2 text-right font-mono text-slate-900">19.9%</td><td class="py-2 px-2 text-right font-mono">¥20</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-100">时令组</span></td></tr>
+                                <tr class="hover:bg-slate-50/60"><td class="py-2 px-3 font-mono text-slate-400">SPU-10010</td><td class="py-2 px-3 text-slate-700">手工海鲜葱煎饼</td><td class="py-2 px-3 text-slate-500">风味小食</td><td class="py-2 px-2 text-right font-mono">15</td><td class="py-2 px-2 text-right font-mono text-slate-900">11.2%</td><td class="py-2 px-2 text-right font-mono">¥24</td><td class="py-2 px-3 text-center"><span class="text-[9px] font-medium px-1.5 py-0.5 rounded bg-slate-50 text-slate-600 border border-slate-100">默认组</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-[9px] text-slate-400 mt-3 px-1">共 50 条记录 · 当前显示 10 条</p>
+                </div>
+            </div>
+
+            <!-- Markdown sample -->
+            <div id="canvas-md" class="canvas-tab-content flex-1 overflow-y-auto">
+                <div class="p-5 max-w-lg mx-auto text-xs leading-relaxed text-slate-600 space-y-4">
+                    <h1 class="text-lg font-bold text-slate-800">韩国城店菜单诊断报告</h1>
+                    <p class="text-slate-400 text-[11px]">生成日期: 2026-06-04 · 分析师: BA Agent Engine</p>
+                    <hr class="border-slate-200">
+
+                    <h2 class="text-sm font-bold text-slate-800 mt-4">一、总体诊断</h2>
+                    <p>韩国城店当前在架 <strong>50 款 SPU</strong>，覆盖招牌主食、人气炸鸡、汤品火锅、风味小食及时令冷饮 5 大品类。系统已完成复合测算，核心结论如下：</p>
+                    <ul class="list-disc pl-4 space-y-1 text-slate-500">
+                        <li>高销组 14 款 SPU 贡献了 62% 的订单量，集中度高</li>
+                        <li>默认组 18 款 SPU 中有 7 款连续 14 天转化率低于 5%，为高风险汰换对象</li>
+                        <li>时令冷饮品类日均销量环比 +18%，正处于上升趋势</li>
+                        <li>深夜时段（22:00-02:00）供给覆盖不足，缺失率约 18.5%</li>
+                    </ul>
+
+                    <h2 class="text-sm font-bold text-slate-800 mt-4">二、策略建议</h2>
+                    <h3 class="text-xs font-bold text-slate-700 mt-2">2.1 应季品扩充（+22 SKU）</h3>
+                    <p>引入当季热门冷饮和夏季特色小食，预计拉升下午茶时段订单量约 12%。</p>
+
+                    <h3 class="text-xs font-bold text-slate-700 mt-2">2.2 低转化品汰换（-13 SKU）</h3>
+                    <p>对连续 14 天转化率低于 5% 的长尾菜品执行淘汰，聚焦主推爆款，预计减少库存损耗 8%。</p>
+
+                    <h3 class="text-xs font-bold text-slate-700 mt-2">2.3 深夜场景补缺</h3>
+                    <p>建议增加 3-5 款适合深夜消费场景的高性价比小吃或套餐组合，填补供给缺口。</p>
+
+                    <hr class="border-slate-200 mt-4">
+                    <p class="text-[10px] text-slate-400 italic">本报告由 BA Agent 自动生成，数据来源：门店实时流水 + 商圈竞品监测</p>
+                </div>
+            </div>
+
+            <!-- HTML Dashboard sample -->
+            <div id="canvas-dashboard" class="canvas-tab-content active flex-1 overflow-y-auto">
+                <div class="flex items-center justify-center h-full">
+                    <span class="text-[12px] text-slate-400 font-medium">对话生成数据Dashboard / 画布</span>
+                </div>
+            </div>
+                        <div class="bg-white border border-slate-200/60 rounded-xl p-3 text-center">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">日均订单</span>
+                            <span class="text-2xl font-black text-slate-800 block mt-1">428</span>
+                            <span class="text-[10px] text-slate-400">单</span>
+                        </div>
+                        <div class="bg-white border border-slate-200/60 rounded-xl p-3 text-center">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">进店转化率</span>
+                            <span class="text-2xl font-black text-slate-800 block mt-1">14.4%</span>
+                            <span class="text-[9px] text-emerald-500 flex items-center justify-center gap-0.5 mt-0.5">▲ 2.1% <span class="text-slate-400">vs 上月</span></span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200/60 rounded-xl p-4">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase block mb-3">策略组分布</span>
+                        <div class="space-y-2">
+                            <div class="flex items-center gap-2 text-[11px]">
+                                <span class="w-20 text-slate-500">高销组</span>
+                                <div class="flex-1 h-5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-amber-400 rounded-full" style="width: 28%"></div>
+                                </div>
+                                <span class="w-10 text-right font-mono text-slate-700">14</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-[11px]">
+                                <span class="w-20 text-slate-500">时令组</span>
+                                <div class="flex-1 h-5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-slate-400 rounded-full" style="width: 16%"></div>
+                                </div>
+                                <span class="w-10 text-right font-mono text-slate-700">8</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-[11px]">
+                                <span class="w-20 text-slate-500">转化组</span>
+                                <div class="flex-1 h-5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-indigo-400 rounded-full" style="width: 20%"></div>
+                                </div>
+                                <span class="w-10 text-right font-mono text-slate-700">10</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-[11px]">
+                                <span class="w-20 text-slate-500">默认组</span>
+                                <div class="flex-1 h-5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-slate-300 rounded-full" style="width: 36%"></div>
+                                </div>
+                                <span class="w-10 text-right font-mono text-slate-700">18</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white border border-slate-200/60 rounded-xl p-4">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase block mb-3">时段订单分布</span>
+                        <div class="flex items-end gap-2 h-32">
+                            <div class="flex-1 flex flex-col items-center gap-1">
+                                <span class="text-[10px] font-mono text-slate-600">42</span>
+                                <div class="w-full bg-indigo-400 rounded-t" style="height: 80%"></div>
+                                <span class="text-[9px] text-slate-400">午市</span>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center gap-1">
+                                <span class="text-[10px] font-mono text-slate-600">56</span>
+                                <div class="w-full bg-indigo-500 rounded-t" style="height: 100%"></div>
+                                <span class="text-[9px] text-slate-400">下午茶</span>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center gap-1">
+                                <span class="text-[10px] font-mono text-slate-600">78</span>
+                                <div class="w-full bg-indigo-600 rounded-t" style="height: 90%"></div>
+                                <span class="text-[9px] text-slate-400">晚餐</span>
+                            </div>
+                            <div class="flex-1 flex flex-col items-center gap-1">
+                                <span class="text-[10px] font-mono text-slate-600">24</span>
+                                <div class="w-full bg-slate-300 rounded-t" style="height: 40%"></div>
+                                <span class="text-[9px] text-slate-400">深夜</span>
+                            </div>
+                        </div>
+                        <p class="text-[9px] text-slate-400 mt-2 text-center">深夜时段供给缺口 18.5%</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        let activeTaskId = 'task-001';
+        let currentSubTab = 'chat';
+
+        // ─── 选择任务 ───
+        function selectTask(itemEl, taskId, taskName) {
+            activeTaskId = taskId;
+            document.querySelectorAll('.task-item').forEach(el => {
+                el.classList.remove('ring-1', 'ring-indigo-100/50', 'border-indigo-200/60');
+            });
+            itemEl.classList.add('ring-1', 'ring-indigo-100/50', 'border-indigo-200/60');
+        }
+
+        // ─── 新建任务 ───
+        function createNewTask() {
+            const firstDateGroup = document.querySelector('.task-date-group');
+            if (!firstDateGroup) return;
+            const sid = Math.random().toString(36).substring(2, 7).toUpperCase();
+            const newTaskHTML = `
+                <div class="task-item group relative p-1.5 bg-white/80 border border-indigo-200/60 rounded-lg text-xs cursor-pointer hover:border-indigo-300 hover:shadow transition-all ring-1 ring-indigo-100/50 animate-pulse" data-task-status="active" onclick="selectTask(this, '${sid}', '新建选品任务')">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="flex-1 min-w-0">
+                            <span class="truncate font-semibold text-slate-800 text-[11px]">新建选品任务</span>
+                            <span class="text-[9px] text-slate-300 font-normal ml-1">· ${timeStr}</span>
+                                    <p class="text-[10px] text-slate-400 mt-0.5 truncate">点击开始配置任务参数</p>
+                        </div>
+                        <span class="flex-shrink-0 w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1 animate-pulse"></span>
+                    </div>
+                    <div class="flex items-center justify-between mt-1 text-[9px]">
+                        <span class="text-slate-400 font-mono cursor-pointer hover:text-slate-600" onclick="event.stopPropagation();copySID(this)" title="点击复制">${sid}</span>
+                        <span class="text-indigo-500 font-medium bg-indigo-50/50 px-1.5 py-0.5 rounded">进行中</span><button onclick="event.stopPropagation();deleteTask(this)" class="absolute top-1 right-1 hidden group-hover:block text-slate-300 hover:text-rose-500 text-xs leading-none">&times;</button>
+                    </div>
+                </div>
+            `;
+            const container = firstDateGroup.querySelector('.space-y-1') || firstDateGroup;
+            container.insertAdjacentHTML('afterbegin', newTaskHTML);
+            setTimeout(() => {
+                const el = container.querySelector('.animate-pulse');
+                if (el) el.classList.remove('animate-pulse');
+            }, 1500);
+            selectTask(container.querySelector('.task-item'), sid, '新建选品任务');
+        }
+
+        // ─── 子 Tab 切换（对话/文件/Skill） ───
+        function switchSubTab(tab, btn) {
+            currentSubTab = tab;
+            document.querySelectorAll('.subtab-btn').forEach(b => {
+                b.className = "subtab-btn px-3 py-1 text-[10px] font-medium rounded-md bg-white text-slate-400 transition-colors";
+            });
+            btn.className = "subtab-btn px-3 py-1 text-[10px] font-medium rounded-md bg-white text-slate-800 transition-colors";
+
+            const chatView = document.getElementById('chat-view');
+            const filesView = document.getElementById('files-view');
+            const skillView = document.getElementById('skill-view');
+
+            chatView.classList.add('hidden');
+            filesView.classList.add('hidden');
+            skillView.classList.add('hidden');
+
+            if (tab === 'chat') {
+                chatView.classList.remove('hidden');
+            } else if (tab === 'files') {
+                filesView.classList.remove('hidden');
+            } else if (tab === 'skill') {
+                skillView.classList.remove('hidden');
+            }
+        }
+
+        // ─── 复制 SID ───
+        function copySID(el) {
+            const sid = el.textContent.trim();
+            navigator.clipboard.writeText(sid).then(() => {
+                const orig = el.textContent;
+                el.textContent = '已复制';
+                setTimeout(() => { el.textContent = orig; }, 1000);
+            });
+        }
+
+        // ─── 删除任务 ───
+        function deleteTask(btn) {
+            const taskItem = btn.closest('.task-item');
+            if (taskItem) {
+                const dateGroup = taskItem.closest('.task-date-group');
+                taskItem.remove();
+                if (dateGroup && dateGroup.querySelectorAll('.task-item').length === 0) {
+                    dateGroup.remove();
+                }
+            }
+        }
+
+        // ─── 删除画布 Tab ───
+        function deleteCanvasTab(btn) {
+            const tabBtn = btn.closest('.canvas-tab-btn');
+            const tabId = tabBtn.getAttribute('data-canvas-tab');
+            if (tabId) {
+                const content = document.getElementById('canvas-' + tabId);
+                if (content) content.remove();
+            }
+            tabBtn.remove();
+            const remaining = document.querySelector('.canvas-tab-btn');
+            if (remaining) remaining.click();
+        }
+
+        // ─── 画布 Tab 切换（Excel / MD / Dashboard） ───
+        function switchCanvasTab(tab, btn) {
+            document.querySelectorAll('.canvas-tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.canvas-tab-btn').forEach(b => {
+                b.className = "canvas-tab-btn px-3 py-1.5 bg-transparent border border-transparent hover:bg-white/60 rounded-t-lg text-[11px] font-medium text-slate-500 cursor-pointer flex items-center gap-1.5 transition-all";
+            });
+            btn.className = "canvas-tab-btn px-3 py-1.5 bg-white border border-slate-200 border-b-transparent rounded-t-lg text-[11px] font-bold text-slate-700 cursor-pointer flex items-center gap-1.5";
+            document.getElementById('canvas-' + tab).classList.add('active');
+        }
+
+        function toggleThoughtProcess() {
+            document.getElementById('thought-log').classList.toggle('expanded');
+        }
+
+        function disablePolicyCard(cardId, textStatus) {
+            const card = document.getElementById(cardId);
+            if (!card) return;
+            card.className = "bg-slate-50 border border-slate-200 shadow-none rounded-xl p-3 w-full max-w-[95%] opacity-50 pointer-events-none transition-all";
+            const indicator = card.querySelector('.policy-indicator');
+            if (indicator) indicator.className = "policy-indicator w-1.5 h-1.5 rounded-full bg-slate-400";
+            const badge = card.querySelector('.sku-badge');
+            if (badge) badge.className = "sku-badge px-2 py-0.5 rounded-md font-mono text-[11px] font-bold bg-slate-100 text-slate-500 border border-slate-200";
+            const actionContainer = card.querySelector('.action-container');
+            if (actionContainer) {
+                actionContainer.innerHTML = `<div class="w-full text-right text-[11px] font-bold text-slate-400 py-1 pr-2">${textStatus}</div>`;
+            }
+        }
+
+        function handlePolicyAction(action) {
+            switch (action) {
+                case 'accept-seasonal': disablePolicyCard('card-policy-seasonal', '策略已采纳'); break;
+                case 'modify-seasonal': break;
+                case 'reject-seasonal': disablePolicyCard('card-policy-seasonal', '提案已拒绝'); break;
+                case 'accept-elimination': disablePolicyCard('card-policy-elimination', '策略已采纳'); break;
+                case 'modify-elimination': break;
+                case 'reject-elimination': disablePolicyCard('card-policy-elimination', '提案已拒绝'); break;
+            }
+        }
+
+        // ─── 收起/展开画布 ───
+        let canvasCollapsed = false;
+        function toggleCanvas() {
+            const canvas = document.getElementById('panel-canvas');
+            const resizer2 = document.getElementById('resizer-2');
+            const icon = document.querySelector('.toggle-canvas-icon');
+            const label = document.getElementById('toggle-canvas-label');
+            canvasCollapsed = !canvasCollapsed;
+            if (canvasCollapsed) {
+                canvas._savedWidth = canvas.style.width || canvas.offsetWidth + 'px';
+                canvas.style.width = '36px';
+                canvas.style.minWidth = '36px';
+                resizer2.style.display = 'none';
+                if (icon) icon.style.transform = 'rotate(180deg)';
+                if (label) label.textContent = '';
+            } else {
+                canvas.style.width = canvas._savedWidth || '560px';
+                canvas.style.minWidth = '400px';
+                resizer2.style.display = '';
+                if (icon) icon.style.transform = '';
+                if (label) label.textContent = '收起';
+            }
+        }
+
+        // ─── 新建对话 ───
+        function createNewChat() {
+            const chatView = document.getElementById('chat-view');
+            const now = new Date();
+            const timeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+            const dateStr = now.getFullYear() + String(now.getMonth()+1).padStart(2,'0');
+            const newSid = Math.random().toString(36).substring(2, 7) + '-' + dateStr;
+            const sidEl = document.querySelector('#panel-chat .font-mono');
+            if (sidEl) sidEl.textContent = 'SID: ' + newSid;
+            chatView.innerHTML = `
+                <div class="flex items-center gap-3 w-full">
+                    <div class="flex-1 h-px bg-slate-200"></div>
+                    <span class="text-[10px] text-slate-400 whitespace-nowrap font-medium">新对话 <span class="font-mono text-slate-300">SID: ${newSid}</span></span>
+                    <div class="flex-1 h-px bg-slate-200"></div>
+                </div>
+            `;
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        // ─── Resizer ───
+        function initMultiResizer() {
+            const taskbar = document.getElementById('panel-taskbar');
+            const canvas = document.getElementById('panel-canvas');
+
+            const resizer1 = document.getElementById('resizer-1');
+            resizer1.addEventListener('mousedown', (e) => {
+                e.preventDefault(); resizer1.classList.add('dragging');
+                const startW = taskbar.offsetWidth; const startX = e.clientX;
+                function onMouseMove(ev) {
+                    let w = startW + (ev.clientX - startX);
+                    if (w < 200) w = 200; if (w > 400) w = 400;
+                    taskbar.style.width = w + 'px';
+                }
+                function onMouseUp() { resizer1.classList.remove('dragging'); document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
+                document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+            });
+
+            const resizer2 = document.getElementById('resizer-2');
+            resizer2.addEventListener('mousedown', (e) => {
+                e.preventDefault(); resizer2.classList.add('dragging');
+                const startW = canvas.offsetWidth; const startX = e.clientX;
+                function onMouseMove(ev) {
+                    let w = startW - (ev.clientX - startX);
+                    if (w < 360) w = 360; if (w > 900) w = 900;
+                    canvas.style.width = w + 'px';
+                }
+                function onMouseUp() { resizer2.classList.remove('dragging'); document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); }
+                document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+            });
+        }
+
+        initMultiResizer();
+    </script>
+</body>
+</html>
