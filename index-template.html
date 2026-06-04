@@ -41,8 +41,8 @@
         html.dark textarea::placeholder { color: #505068 !important; }
         html.dark .bg-slate-800 { background-color: #3d3d5c !important; }
         html.dark .hover\\:bg-slate-200\\/50:hover { background-color: rgba(255,255,255,0.05) !important; }
-        #panel-taskbar, #panel-chat, #panel-canvas { outline: none !important; }
-        #panel-taskbar *, #panel-chat *, #panel-canvas * { -webkit-user-select: none; user-select: none; }
+        #panel-taskbar *, #panel-chat * { -webkit-user-select: none; user-select: none; }
+        #panel-canvas .canvas-tab-content * { -webkit-user-select: none; user-select: none; }
     </style>
     <script>
         window.svgIcons = {
@@ -583,18 +583,15 @@
         <section id="panel-canvas" class="bg-white/40 backdrop-blur-xl flex flex-col overflow-hidden flex-shrink-0 transition-all duration-300 ease-in-out" style="width: 560px; min-width: 400px;">
             <!-- 文件 Tab 栏 -->
             <div class="h-10 px-3 flex items-end justify-between border-b border-slate-200/40 bg-slate-50/80 flex-shrink-0">
-                <div class="flex gap-0.5 items-end -mb-px">
-                    <button onclick="switchCanvasTab('dashboard', this)" data-canvas-tab="dashboard" class="canvas-tab-btn group px-3 py-1.5 bg-white border border-slate-200 border-b-transparent rounded-t-lg text-[11px] font-bold text-slate-700 cursor-pointer flex items-center gap-1.5">
+                <div class="flex gap-0.5 items-end -mb-px" id="canvas-tabs-row">
+                    <button onclick="switchCanvasTab('dashboard', this)" class="canvas-tab-btn px-3 py-1.5 bg-white border border-slate-200 border-b-transparent rounded-t-lg text-[11px] font-bold text-slate-700 cursor-pointer flex items-center gap-1.5">
                         <span data-icon="dashboard" class="w-3 h-3 text-indigo-500"></span>Dashboard
-                        <span onclick="event.stopPropagation();deleteCanvasTab(this)" class="w-4 h-4 flex items-center justify-center rounded text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all ml-0.5 text-[11px] leading-none">&times;</span>
                     </button>
-                    <button onclick="switchCanvasTab('xlsx', this)" data-canvas-tab="xlsx" class="canvas-tab-btn group px-3 py-1.5 bg-transparent border border-transparent hover:bg-white/60 rounded-t-lg text-[11px] font-medium text-slate-500 cursor-pointer flex items-center gap-1.5">
+                    <button onclick="switchCanvasTab('xlsx', this)" class="canvas-tab-btn px-3 py-1.5 bg-transparent border border-transparent hover:bg-white/60 rounded-t-lg text-[11px] font-medium text-slate-500 cursor-pointer flex items-center gap-1.5">
                         <span data-icon="xlsx" class="w-3 h-3 text-emerald-500"></span>sample_report.xlsx
-                        <span onclick="event.stopPropagation();deleteCanvasTab(this)" class="w-4 h-4 flex items-center justify-center rounded text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all ml-0.5 text-[11px] leading-none">&times;</span>
                     </button>
-                    <button onclick="switchCanvasTab('md', this)" data-canvas-tab="md" class="canvas-tab-btn group px-3 py-1.5 bg-transparent border border-transparent hover:bg-white/60 rounded-t-lg text-[11px] font-medium text-slate-500 cursor-pointer flex items-center gap-1.5">
+                    <button onclick="switchCanvasTab('md', this)" class="canvas-tab-btn px-3 py-1.5 bg-transparent border border-transparent hover:bg-white/60 rounded-t-lg text-[11px] font-medium text-slate-500 cursor-pointer flex items-center gap-1.5">
                         <span data-icon="markdown" class="w-3 h-3 text-slate-400"></span>analysis.md
-                        <span onclick="event.stopPropagation();deleteCanvasTab(this)" class="w-4 h-4 flex items-center justify-center rounded text-slate-300 hover:text-rose-500 hover:bg-rose-50 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all ml-0.5 text-[11px] leading-none">&times;</span>
                     </button>
                 </div>
                 <button onclick="toggleCanvas()" id="btn-toggle-canvas" class="mb-1 px-2 py-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 flex-shrink-0" title="收起工作区">
@@ -670,20 +667,16 @@
 
             <!-- HTML Dashboard sample -->
             <div id="canvas-dashboard" class="canvas-tab-content active flex-1 overflow-y-auto">
-                <div class="flex items-center justify-center h-full">
-                    <span class="text-[12px] text-slate-400 font-medium">对话生成数据Dashboard / 画布</span>
-                </div>
-            </div>
-                        <div class="bg-white border border-slate-200/60 rounded-xl p-3 text-center">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase block">日均订单</span>
-                            <span class="text-2xl font-black text-slate-800 block mt-1">428</span>
-                            <span class="text-[10px] text-slate-400">单</span>
-                        </div>
-                        <div class="bg-white border border-slate-200/60 rounded-xl p-3 text-center">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase block">进店转化率</span>
-                            <span class="text-2xl font-black text-slate-800 block mt-1">14.4%</span>
-                            <span class="text-[9px] text-emerald-500 flex items-center justify-center gap-0.5 mt-0.5">▲ 2.1% <span class="text-slate-400">vs 上月</span></span>
-                        </div>
+                <div class="p-4 space-y-4">
+                    <div class="bg-white border border-slate-200/60 rounded-xl p-4 text-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase block">日均订单</span>
+                        <span class="text-2xl font-black text-slate-800 block mt-1">428</span>
+                        <span class="text-[10px] text-slate-400">单</span>
+                    </div>
+                    <div class="bg-white border border-slate-200/60 rounded-xl p-4 text-center">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase block">进店转化率</span>
+                        <span class="text-2xl font-black text-slate-800 block mt-1">14.4%</span>
+                        <span class="text-[9px] text-emerald-500 flex items-center justify-center gap-0.5 mt-0.5">▲ 2.1% <span class="text-slate-400">vs 上月</span></span>
                     </div>
 
                     <div class="bg-white border border-slate-200/60 rounded-xl p-4">
@@ -803,21 +796,15 @@
             });
             btn.className = "subtab-btn px-3 py-1 text-[10px] font-medium rounded-md bg-white text-slate-800 transition-colors";
 
-            const chatView = document.getElementById('chat-view');
-            const filesView = document.getElementById('files-view');
-            const skillView = document.getElementById('skill-view');
+            ['chat-view','files-view','skill-view','flow-view'].forEach(id => {
+                const el = document.getElementById(id);
+                el.classList.add('hidden');
+                el.style.display = '';
+            });
 
-            chatView.classList.add('hidden');
-            filesView.classList.add('hidden');
-            skillView.classList.add('hidden');
-
-            if (tab === 'chat') {
-                chatView.classList.remove('hidden');
-            } else if (tab === 'files') {
-                filesView.classList.remove('hidden');
-            } else if (tab === 'skill') {
-                skillView.classList.remove('hidden');
-            }
+            const activeView = document.getElementById(tab + '-view');
+            activeView.classList.remove('hidden');
+            activeView.style.display = '';
         }
 
         // ─── 复制 SID ───
@@ -842,28 +829,17 @@
             }
         }
 
-        // ─── 删除画布 Tab ───
-        function deleteCanvasTab(btn) {
-            const tabBtn = btn.closest('.canvas-tab-btn');
-            const tabId = tabBtn.getAttribute('data-canvas-tab');
-            if (tabId) {
-                const content = document.getElementById('canvas-' + tabId);
-                if (content) content.remove();
-            }
-            tabBtn.remove();
-            const remaining = document.querySelector('.canvas-tab-btn');
-            if (remaining) remaining.click();
-        }
-
-        // ─── 画布 Tab 切换（Excel / MD / Dashboard） ───
+        // ─── 画布 Tab 切换 ───
         function switchCanvasTab(tab, btn) {
             document.querySelectorAll('.canvas-tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.canvas-tab-btn').forEach(b => {
-                b.className = "canvas-tab-btn group px-3 py-1.5 bg-transparent border border-transparent hover:bg-white/60 rounded-t-lg text-[11px] font-medium text-slate-500 cursor-pointer flex items-center gap-1.5 transition-all";
+                b.className = "canvas-tab-btn px-3 py-1.5 bg-transparent border border-transparent hover:bg-white/60 rounded-t-lg text-[11px] font-medium text-slate-500 cursor-pointer flex items-center gap-1.5";
             });
-            btn.className = "canvas-tab-btn group px-3 py-1.5 bg-white border border-slate-200 border-b-transparent rounded-t-lg text-[11px] font-bold text-slate-700 cursor-pointer flex items-center gap-1.5";
+            btn.className = "canvas-tab-btn px-3 py-1.5 bg-white border border-slate-200 border-b-transparent rounded-t-lg text-[11px] font-bold text-slate-700 cursor-pointer flex items-center gap-1.5";
             document.getElementById('canvas-' + tab).classList.add('active');
         }
+
+        // ─── Resizer ───
 
         function toggleThoughtProcess() {
             document.getElementById('thought-log').classList.toggle('expanded');
