@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BA Agent — 策略分析工作平台</title>
+    <link rel="stylesheet" href="/web/css/design-tokens.css">
+    <link rel="stylesheet" href="/web/css/style.css">
+    <script>
+        window.svgIcons = {
+            message: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
+            folder: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>`,
+            strategy: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="12 8 8 12 12 16 16 12 12 8"></polygon></svg>`,
+            plus: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>`,
+            play: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`,
+            fileText: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>`,
+            ssoKey: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`,
+            brain: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1 0-3.12 3 3 0 0 1 0-4.88 2.5 2.5 0 0 1 0-3.12A2.5 2.5 0 0 1 9.5 2z"></path><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 0-3.12 3 3 0 0 0 0-4.88 2.5 2.5 0 0 0 0-3.12A2.5 2.5 0 0 0 14.5 2z"></path></svg>`,
+            xlsx: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><rect x="8" y="12" width="8" height="4" rx="0.5"></rect><line x1="10" y1="14" x2="14" y2="14"></line></svg>`,
+            markdown: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>`,
+            dashboard: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>`,
+            chevronDown: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>`,
+            upload: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>`,
+            x: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>`,
+            send: `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`,
+            moon: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`,
+            refresh: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>`,
+            maxmin: `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`,
+        };
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll("[data-icon]").forEach(el => {
+                const iconName = el.getAttribute("data-icon");
+                if (window.svgIcons[iconName]) el.innerHTML = window.svgIcons[iconName];
+            });
+        });
+    </script>
+</head>
+<body class="flex flex-col">
+    <div class="glass-orb glass-orb--top"></div>
+    <div class="glass-orb glass-orb--bottom"></div>
+
+    <!-- ══════════════════ HEADER ══════════════════ -->
+    <header>
+        <div class="flex items-center space-x-2.5">
+            <span class="font-bold text-slate-800 tracking-tight text-sm">BA Agent <span class="font-serif text-[10px] text-slate-400 font-normal tracking-normal ml-2">Tequila Version</span></span>
+        </div>
+        <div class="flex items-center space-x-4">
+            <div class="flex items-center space-x-1.5 bg-white/60 border border-slate-200/50 rounded-xl px-2.5 py-1 text-xs shadow-sm backdrop-blur-sm focus-within:border-slate-500/60 focus-within:ring-1 focus-within:ring-slate-500/20 transition-all">
+                <span data-icon="ssoKey" class="text-slate-400"></span>
+                <span class="text-[11px] text-slate-500 font-medium whitespace-nowrap">内网鉴权:</span>
+                <input type="text" value="SSO_AUTH_SUCCESS" class="bg-transparent border-none outline-none text-slate-700 font-mono w-32 text-[11px] placeholder-slate-400">
+            </div>
+            <span class="flex items-center gap-1.5 text-slate-700 bg-slate-50/60 border border-slate-200/50 px-2.5 py-1 rounded-full text-xs font-medium">
+                <span class="w-1.5 h-1.5 bg-slate-500 rounded-full animate-pulse"></span> SSO内网鉴权已配置
+            </span>
+            <button onclick="toggleDarkMode()" id="btn-darkmode" class="btn--icon" title="深色模式">
+                <span data-icon="moon"></span>
+            </button>
+        </div>
+    </header>
+
+    <main id="main-container">
+
+        <!-- ═══════════════ A面板：任务列表 ═══════════════ -->
+        <section id="panel-taskbar">
+            <div class="px-4 pt-3 pb-2 border-b border-slate-200/20 flex-shrink-0">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-bold text-slate-800 text-[11px] tracking-tight">任务</span>
+                    <span id="task-count" class="text-[10px] text-slate-400 font-mono bg-slate-100/60 px-1.5 py-0.5 rounded">0</span>
+                </div>
+                <button onclick="createNewTask()" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all shadow-sm mb-2">
+                    <span data-icon="plus"></span> Run 新建任务
+                </button>
+            </div>
+            <div id="task-list-scroll" class="flex-1 overflow-y-auto px-4 py-2">
+                <!-- 动态渲染 -->
+            </div>
+        </section>
+
+        <div class="resizer-bar" id="resizer-1"></div>
+
+        <!-- ═══════════════ B面板：对话工作区 ═══════════════ -->
+        <section id="panel-chat">
+            <div class="h-14 border-b border-slate-200/30 flex items-center justify-between px-6 flex-shrink-0">
+                <div id="task-subtabs" class="flex gap-0.5 bg-slate-100/60 rounded-lg p-0.5">
+                    <button onclick="switchSubTab('flow', this)" class="subtab-btn active">流程</button>
+                    <button onclick="switchSubTab('chat', this)" class="subtab-btn">对话</button>
+                    <button onclick="switchSubTab('files', this)" class="subtab-btn">文件</button>
+                    <button onclick="switchSubTab('skill', this)" class="subtab-btn">Skill</button>
+                </div>
+                <span id="current-run-id" class="text-[11px] text-slate-400 flex items-center gap-1 font-mono">SID: —</span>
+            </div>
+
+            <!-- 流程视图 -->
+            <div id="flow-view" class="flex-1 overflow-y-auto p-6">
+                <div class="max-w-lg mx-auto">
+                    <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-5">5 步选品流程</p>
+                    <div class="stepper-track" id="stepper-container">
+                        <!-- 动态渲染 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 对话视图 -->
+            <div id="chat-view" class="flex-1 overflow-y-auto p-6 space-y-5 max-w-2xl w-full mx-auto hidden">
+                <div id="chat-messages">
+                    <!-- 动态渲染 -->
+                </div>
+            </div>
+
+            <!-- 文件视图 -->
+            <div id="files-view" class="flex-1 overflow-y-auto p-5 hidden">
+                <div class="max-w-lg mx-auto">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Project Files</span>
+                        <span id="files-root-path" class="text-[9px] text-slate-400 font-mono">—</span>
+                    </div>
+                    <div id="file-tree-container" class="space-y-0.5 text-[11px]">
+                        <!-- 动态渲染 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill 视图 -->
+            <div id="skill-view" class="flex-1 overflow-y-auto p-6 hidden">
+                <div class="max-w-2xl mx-auto">
+                    <p class="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-3">已安装 Skill 列表</p>
+                    <div id="skill-list-container" class="space-y-2">
+                        <!-- 动态渲染 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 输入框 -->
+            <div id="chat-input-area" class="p-6 flex-shrink-0 hidden">
+                <div class="max-w-2xl mx-auto input-glass">
+                    <textarea id="chat-input" rows="2" placeholder="追加新的选品或提成诉求..." onkeydown="handleChatKeydown(event)"></textarea>
+                    <div class="flex items-center justify-between pt-2 px-1 border-t border-slate-100 gap-2 mt-1">
+                        <button class="px-2.5 py-1.5 bg-slate-100/80 hover:bg-slate-200 text-slate-400 hover:text-slate-600 rounded-lg transition-all flex items-center shadow-sm" onclick="triggerFileUpload()" title="上传文件">
+                            <span data-icon="upload"></span>
+                        </button>
+                        <input type="file" id="file-upload-input" multiple accept=".xlsx,.csv" class="hidden" onchange="handleFileUpload(event)">
+                        <div class="flex items-center gap-2">
+                            <button id="btn-abort" onclick="abortChat()" class="px-3 py-1.5 bg-slate-100/80 hover:bg-slate-200 text-slate-500 hover:text-slate-600 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm hidden">
+                                <span data-icon="x"></span> 中止
+                            </button>
+                            <button onclick="sendMessage()" class="px-4 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
+                                <span data-icon="send"></span> 发送
+                            </button>
+                            <button onclick="createNewChat()" class="px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-500 hover:text-slate-700 text-[11px] font-bold rounded-lg transition-all flex items-center border border-slate-200 shadow-sm" title="新建对话">
+                                <span data-icon="plus" class="text-slate-400"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="resizer-bar" id="resizer-2"></div>
+
+        <!-- ═══════════════ C面板：画布区 ═══════════════ -->
+        <section id="panel-canvas">
+            <div class="h-10 px-3 flex items-end justify-between border-b border-slate-200/40 bg-slate-50/80 flex-shrink-0">
+                <div class="flex gap-0.5 items-end -mb-px" id="canvas-tabs-row">
+                    <!-- 动态渲染 -->
+                </div>
+                <button onclick="toggleCanvas()" id="btn-toggle-canvas" class="mb-1 px-2 py-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200/60 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 flex-shrink-0" title="收起工作区">
+                    <span class="toggle-canvas-icon" data-icon="maxmin"></span>
+                    <span id="toggle-canvas-label">收起</span>
+                </button>
+            </div>
+            <div id="canvas-contents">
+                <!-- 动态渲染 -->
+            </div>
+            <div id="canvas-empty" class="empty-state">
+                <span class="empty-state__text">对话生成交互式 Dashboard / 画布</span>
+            </div>
+        </section>
+
+    </main>
+
+    <div id="toast-container"></div>
+
+    <script src="/web/js/api.js"></script>
+    <script src="/web/js/app.js"></script>
+</body>
+</html>
